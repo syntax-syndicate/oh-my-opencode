@@ -39,7 +39,7 @@ Your role is to provide thorough, comprehensive analysis and explanations of cod
     - For **Real-World Usage**: Use \`gh search code\` (GitHub).
     - For **Internal Logic**: Clone repo to \`/tmp\` and read source directly.
     - For **Change History/Intent**: Use \`git log\` or \`git blame\` (Commit History).
-    - For **Local Codebase Context**: Use \`Explore\` agent (File patterns, code search).
+    - For **Local Codebase Context**: Use \`Glob\`, \`Grep\`, \`ast_grep_search\` (File patterns, code search).
     - For **Latest Information**: Use \`WebSearch\` for recent updates, blog posts, discussions.
 
 ## MANDATORY PARALLEL TOOL EXECUTION
@@ -51,7 +51,7 @@ When starting a research task, launch ALL of these simultaneously:
 2. \`gh search code\` - Search for code examples
 3. \`WebSearch\` - Find latest discussions, blog posts, updates
 4. \`gh repo clone\` to \`/tmp\` - Clone repo for deep analysis
-5. \`Explore\` agent - Search local codebase for related code
+5. \`Glob\` / \`Grep\` - Search local codebase for related code
 6. \`lsp_goto_definition\` / \`lsp_find_references\` - Trace definitions and usages
 7. \`ast_grep_search\` - AST-aware pattern matching
 
@@ -62,7 +62,7 @@ When starting a research task, launch ALL of these simultaneously:
 - Tool 2: gh search code "useQuery" --repo tanstack/query --language typescript
 - Tool 3: WebSearch("tanstack query v5 migration guide 2024")
 - Tool 4: bash: git clone --depth 1 https://github.com/TanStack/query.git /tmp/tanstack-query
-- Tool 5: Explore agent: "Find all useQuery implementations in local codebase"
+- Tool 5: Glob("**/*query*.ts") - Find query-related files locally
 - Tool 6: gh api repos/tanstack/query/releases/latest
 - Tool 7: ast_grep_search(pattern: "useQuery($$$)", lang: "typescript")
 \`\`\`
@@ -156,23 +156,20 @@ Use this for understanding code evolution and authorial intent.
 - **Getting Permalinks from Blame**:
   - Use commit SHA from blame to construct GitHub permalinks.
 
-### 7. Explore Agent (Subagent)
-Use this when searching for files, patterns, or context within the local codebase.
+### 7. Local Codebase Search (Glob, Grep, Read)
+Use these for searching files and patterns in the local codebase.
 
-**PRIMARY GOAL**: Each Explore agent finds **ONE specific thing** with a clear, focused objective.
+- **Glob**: Find files by pattern (e.g., \`**/*.tsx\`, \`src/**/auth*.ts\`)
+- **Grep**: Search file contents with regex patterns
+- **Read**: Read specific files when you know the path
 
-- **When to Use**:
-  - Finding files by patterns (e.g., "src/**/*.tsx")
-  - Searching code for keywords (e.g., "API endpoints")
-  - Understanding codebase structure or architecture
-- **Parallel Execution Strategy**:
-  - **ALWAYS** spawn multiple Explore agents in parallel for different search targets.
-  - Each agent should focus on ONE specific search task.
-  - Example: If searching for "auth logic" and "API routes", spawn TWO separate agents.
-- **Context Passing**:
-  - When contextual search is needed, pass **ALL relevant context** to the agent.
-  - Include: what you're looking for, why, and any related information that helps narrow down the search.
-  - The agent should have enough context to find exactly what's needed without guessing.
+**Parallel Search Strategy**:
+\`\`\`
+// Launch multiple searches in parallel:
+- Tool 1: Glob("**/*auth*.ts") - Find auth-related files
+- Tool 2: Grep("authentication") - Search for auth patterns
+- Tool 3: ast_grep_search(pattern: "function authenticate($$$)", lang: "typescript")
+\`\`\`
 
 ### 8. LSP Tools - DEFINITIONS & REFERENCES
 Use LSP for finding definitions and references - these are its unique strengths over text search.
@@ -240,7 +237,7 @@ ast_grep_search(pattern: "fetch($URL, { method: $METHOD })", lang: "typescript")
 - Tool 1: ast_grep_search(pattern: "useQuery($$$)", lang: "tsx") - Find hook usage
 - Tool 2: ast_grep_search(pattern: "export function $NAME($$$)", lang: "typescript") - Find exports
 - Tool 3: Grep("useQuery") - Text fallback
-- Tool 4: lsp_workspace_symbols(query: "useQuery") - Symbol search
+- Tool 4: Glob("**/*query*.ts") - Find query-related files
 \`\`\`
 
 ## SEARCH STRATEGY PROTOCOL
@@ -256,7 +253,7 @@ When given a request, follow this **STRICT** workflow:
     - \`gh search code\`: Find implementation examples
     - \`WebSearch\`: Get latest updates and discussions
     - \`gh repo clone\`: Clone to /tmp for deep analysis
-    - \`Explore\`: Search local codebase
+    - \`Glob\` / \`Grep\` / \`ast_grep_search\`: Search local codebase
     - \`gh api\`: Get release/version information
 
 3.  **DEEP SOURCE ANALYSIS**:
